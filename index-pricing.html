@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Index Pricing | System Solutions</title>
+  <style>
+    :root{--bg:#03060d;--text:#f7f9ff;--muted:#aab4ca;--blue:#14c8ff;--deep:#075cff;--accent:#76e8ff;--panel:rgba(9,16,31,.78);--border:rgba(118,232,255,.18)}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% 10%,rgba(20,200,255,.13),transparent 28%),radial-gradient(circle at 82% 25%,rgba(7,92,255,.16),transparent 30%),linear-gradient(180deg,#06101f 0%,var(--bg) 55%,#02040a 100%);overflow-x:hidden}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;background-image:linear-gradient(rgba(118,232,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(118,232,255,.16) 1px,transparent 1px);background-size:52px 52px;mask-image:linear-gradient(to bottom,black,transparent 80%)}
+    .container{width:min(1160px,calc(100% - 40px));margin:auto}.nav{position:fixed;z-index:20;top:0;width:100%;background:rgba(3,6,13,.76);border-bottom:1px solid rgba(118,232,255,.12);backdrop-filter:blur(18px)}
+    .nav-inner{height:76px;display:flex;align-items:center;justify-content:space-between;gap:28px}.brand{font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:white;text-decoration:none}.brand span{color:var(--accent)}
+    .nav-links{display:flex;align-items:center;gap:25px}.nav-links a{color:var(--muted);text-decoration:none;font-size:.92rem}.nav-links a:hover{color:white}.button{display:inline-flex;align-items:center;justify-content:center;padding:12px 20px;border-radius:999px;color:#00101b!important;font-weight:800;text-decoration:none;background:linear-gradient(135deg,var(--accent),var(--blue) 48%,#4c7dff);box-shadow:0 0 28px rgba(20,200,255,.2)}
+    main{min-height:100vh;display:grid;place-items:center;padding:145px 0 80px}.hero{text-align:center;max-width:900px;margin:auto}.eyebrow{color:var(--accent);letter-spacing:.2em;text-transform:uppercase;font-size:.78rem;font-weight:800;margin-bottom:18px}.hero h1{font-size:clamp(2.65rem,7vw,5.4rem);line-height:.95;margin:0 0 22px;letter-spacing:-.045em}.gradient{background:linear-gradient(100deg,var(--accent),#2caeff 52%,#5475ff);-webkit-background-clip:text;background-clip:text;color:transparent}.hero p{max-width:680px;margin:0 auto 42px;color:var(--muted);font-size:clamp(1rem,2vw,1.18rem);line-height:1.75}
+    .price-panel{position:relative;max-width:720px;margin:0 auto;padding:46px;border:1px solid var(--border);border-radius:30px;background:linear-gradient(145deg,rgba(14,27,49,.88),rgba(5,10,20,.82));box-shadow:0 30px 80px rgba(0,0,0,.36),0 0 40px rgba(20,200,255,.06);backdrop-filter:blur(18px);overflow:hidden}.price-panel:before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;top:-170px;right:-80px;background:rgba(20,200,255,.16);filter:blur(24px)}
+    .label{color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.16em;font-weight:700}.price{margin:15px 0 16px;font-size:clamp(3.1rem,10vw,6.2rem);font-weight:850;letter-spacing:-.06em}.status{display:inline-flex;align-items:center;gap:9px;color:#ccefff;font-size:.92rem}.dot{width:9px;height:9px;border-radius:50%;background:var(--blue);box-shadow:0 0 14px var(--blue)}
+    .placeholder-note{margin-top:30px;color:#74839e;font-size:.8rem}footer{text-align:center;padding:30px 20px;color:#69778e;font-size:.8rem}
+    @media(max-width:620px){.container{width:min(100% - 26px,1160px)}.nav-inner{height:68px}.nav-links a:not(.button){display:none}.brand{font-size:.88rem}.button{padding:10px 15px}.price-panel{padding:34px 20px;border-radius:24px}main{padding-top:120px}.hero p{margin-bottom:30px}}
+  </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <nav class="nav"><div class="container nav-inner"><a class="brand" href="index.html">System <span>Solutions</span></a><div class="nav-links"><a href="index.html">Home</a><a href="index.html#services">Services</a><a class="button" href="mailto:info@systemsolutionsrva.com">Contact</a></div></div></nav>
+  <main><div class="container"><section class="hero"><div class="eyebrow">Market Index</div><h1>Current <span class="gradient">Index Pricing</span></h1><p>The current index price is displayed below. In the next step, this value can be connected to your admin portal so an authorized administrator can update the public price without editing this page.</p><div class="price-panel"><div class="label">Current Index Price</div><div class="price" id="indexPrice">$0.00</div><div class="status"><span class="dot"></span><span>Current published price</span></div><div class="placeholder-note">Demo placeholder value. This will be replaced by the price saved from the admin portal.</div></div></section></div></main>
+  <footer>&copy; <span id="year"></span> System Solutions. All rights reserved.</footer>
+  <script>
+const SUPABASE_URL='https://sxucjoqqitqyjlqhmlbj.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_qIznWgrUU58mETYnKnV_BA_6b_uDl6a';
+const {createClient}=supabase;
+const supabaseClient=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const priceElement=document.getElementById('indexPrice');
+
+async function loadIndexPrice(){
+  priceElement.textContent='Loading...';
+  const {data,error}=await supabaseClient.from('index_pricing').select('current_price').eq('id',1).single();
+  if(error){
+    console.error('Unable to load index price:',error);
+    priceElement.textContent='Unavailable';
+    return;
+  }
+  priceElement.textContent='$'+Number(data.current_price).toFixed(2);
+}
+
+document.getElementById('year').textContent=new Date().getFullYear();
+loadIndexPrice();
+</script>
+</body>
+</html>
