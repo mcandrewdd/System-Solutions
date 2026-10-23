@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Portal | Index Pricing</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#03060d;--text:#f7f9ff;--muted:#aab4ca;--blue:#14c8ff;--deep:#075cff;--accent:#76e8ff;--border:rgba(118,232,255,.18)}*{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(circle at 15% 10%,rgba(20,200,255,.13),transparent 28%),radial-gradient(circle at 82% 25%,rgba(7,92,255,.16),transparent 30%),linear-gradient(180deg,#06101f 0%,var(--bg) 55%,#02040a 100%)}body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.13;background-image:linear-gradient(rgba(118,232,255,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(118,232,255,.16) 1px,transparent 1px);background-size:52px 52px}.wrap{width:min(520px,calc(100% - 28px));margin:auto;padding:80px 0}.brand{text-align:center;text-transform:uppercase;letter-spacing:.1em;font-weight:800;margin-bottom:28px}.brand span{color:var(--accent)}.panel{padding:38px;border:1px solid var(--border);border-radius:28px;background:linear-gradient(145deg,rgba(14,27,49,.9),rgba(5,10,20,.88));box-shadow:0 30px 80px rgba(0,0,0,.4);backdrop-filter:blur(18px)}h1{margin:0 0 8px;font-size:2rem}p{color:var(--muted);line-height:1.55}label{display:block;margin:22px 0 8px;color:#d9e9f5;font-size:.88rem;font-weight:700}input{width:100%;padding:15px 16px;border-radius:12px;border:1px solid rgba(118,232,255,.2);outline:none;background:#07101f;color:white;font-size:1rem}input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(20,200,255,.1)}button{width:100%;border:0;border-radius:999px;padding:14px 20px;margin-top:24px;background:linear-gradient(135deg,var(--accent),var(--blue) 48%,#4c7dff);color:#00101b;font-size:.96rem;font-weight:850;cursor:pointer}button:disabled{opacity:.65;cursor:wait}.small{font-size:.78rem;color:#75859d;margin-top:16px}.hidden{display:none}.price-preview{margin:20px 0;padding:18px;border-radius:16px;background:rgba(20,200,255,.06);border:1px solid rgba(118,232,255,.12)}.price-preview strong{display:block;font-size:2.2rem;color:var(--accent);margin-top:4px}.success{margin-top:17px;color:#90ffd8;font-size:.9rem}.error{color:#ff9caa}.logout{background:transparent;border:1px solid rgba(118,232,255,.25);color:var(--text);margin-top:12px}
+</style>
+</head>
+<body><div class="wrap"><div class="brand">System <span>Solutions</span></div>
+<section id="loginPanel" class="panel"><h1>Admin Portal</h1><p>Sign in with your Supabase administrator account to manage index pricing.</p><label for="email">Email</label><input id="email" type="email" autocomplete="username" placeholder="admin@example.com"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" placeholder="Password"><button id="loginBtn">Sign In</button><div id="loginMsg" class="small"></div></section>
+<section id="managePanel" class="panel hidden"><h1>Index Price</h1><p>Authentication is active. The price field is ready for the database connection step.</p><div class="price-preview"><span class="small">CURRENT PRICE PREVIEW</span><strong id="previewPrice">$0.00</strong></div><label for="price">New Index Price</label><input id="price" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00"><button id="saveBtn">Publish Index Price</button><div id="saveMsg" class="success"></div><button id="logoutBtn" class="logout">Sign Out</button></section>
+</div>
+<script>
+const SUPABASE_URL='https://sxucjoqqitqyjlqhmlbj.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_qIznWgrUU58mETYnKnV_BA_6b_uDl6a';
+const {createClient}=supabase;
+const supabaseClient=createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const loginPanel=document.getElementById('loginPanel'),managePanel=document.getElementById('managePanel'),loginMsg=document.getElementById('loginMsg'),saveMsg=document.getElementById('saveMsg'),emailInput=document.getElementById('email'),passwordInput=document.getElementById('password'),loginBtn=document.getElementById('loginBtn');
+function showLogin(){managePanel.classList.add('hidden');loginPanel.classList.remove('hidden');passwordInput.value='';}
+function showAdmin(user){loginPanel.classList.add('hidden');managePanel.classList.remove('hidden');saveMsg.textContent=user?.email?'Signed in as '+user.email:'';loadCurrentPrice();}
+async function checkSession(){const {data:{session},error}=await supabaseClient.auth.getSession();if(error){loginMsg.textContent=error.message;loginMsg.classList.add('error');showLogin();return;}session?showAdmin(session.user):showLogin();}
+loginBtn.addEventListener('click',async()=>{const email=emailInput.value.trim(),password=passwordInput.value;loginMsg.textContent='';loginMsg.classList.remove('error');if(!email||!password){loginMsg.textContent='Please enter your email and password.';loginMsg.classList.add('error');return;}loginBtn.disabled=true;loginBtn.textContent='Signing In...';const {data,error}=await supabaseClient.auth.signInWithPassword({email,password});if(error){loginMsg.textContent=error.message;loginMsg.classList.add('error');}else showAdmin(data.user);loginBtn.disabled=false;loginBtn.textContent='Sign In';});
+document.getElementById('logoutBtn').addEventListener('click',async()=>{const {error}=await supabaseClient.auth.signOut();if(error){saveMsg.textContent=error.message;return;}saveMsg.textContent='';showLogin();});
+supabaseClient.auth.onAuthStateChange((_event,session)=>{session?showAdmin(session.user):showLogin();});
+async function loadCurrentPrice(){
+  saveMsg.textContent='Loading current price...';
+  const {data,error}=await supabaseClient.from('index_pricing').select('current_price, updated_at').eq('id',1).single();
+  if(error){saveMsg.textContent='Unable to load the price: '+error.message;return;}
+  const value=Number(data.current_price);
+  document.getElementById('previewPrice').textContent='$'+value.toFixed(2);
+  document.getElementById('price').value=value.toFixed(2);
+  saveMsg.textContent='';
+}
+
+document.getElementById('saveBtn').addEventListener('click',async()=>{
+  const priceInput=document.getElementById('price');
+  const price=Number(priceInput.value);
+  const saveButton=document.getElementById('saveBtn');
+  if(!Number.isFinite(price)||price<0){saveMsg.textContent='Please enter a valid index price.';return;}
+  const {data:{user},error:userError}=await supabaseClient.auth.getUser();
+  if(userError||!user){saveMsg.textContent='Your session has expired. Please sign in again.';return;}
+  saveButton.disabled=true;
+  saveButton.textContent='Publishing...';
+  const {data,error}=await supabaseClient.from('index_pricing').update({current_price:price,updated_at:new Date().toISOString(),updated_by:user.id}).eq('id',1).select().single();
+  saveButton.disabled=false;
+  saveButton.textContent='Publish Index Price';
+  if(error){saveMsg.textContent='The price could not be published: '+error.message;return;}
+  document.getElementById('previewPrice').textContent='$'+Number(data.current_price).toFixed(2);
+  priceInput.value=Number(data.current_price).toFixed(2);
+  saveMsg.textContent='Index price published successfully.';
+});
+checkSession();
+</script></body></html>
